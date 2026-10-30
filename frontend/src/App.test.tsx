@@ -13,6 +13,7 @@ const sampleTasks: Task[] = [
     description: "First",
     status: "todo",
     priority: "low",
+    due_date: null,
     created_at: "2026-10-28T14:00:00+00:00",
   },
   {
@@ -21,6 +22,7 @@ const sampleTasks: Task[] = [
     description: null,
     status: "in_progress",
     priority: "medium",
+    due_date: null,
     created_at: "2026-10-28T15:00:00+00:00",
   },
   {
@@ -29,6 +31,7 @@ const sampleTasks: Task[] = [
     description: "Done work",
     status: "done",
     priority: "high",
+    due_date: null,
     created_at: "2026-10-28T16:00:00+00:00",
   },
 ];
@@ -48,6 +51,7 @@ const mixedPriorityTasks: Task[] = (
     description: null,
     status,
     priority,
+    due_date: null,
     created_at: "2026-10-28T14:00:00+00:00",
   })),
 );
@@ -212,6 +216,7 @@ describe("App", () => {
       description: "Some details",
       status: "todo",
       priority: "high",
+      due_date: null,
       created_at: "2026-10-28T17:00:00+00:00",
     };
 
@@ -258,6 +263,63 @@ describe("App", () => {
       title: "New item",
       description: "Some details",
       priority: "high",
+    });
+    expect(JSON.parse(String(postCall?.[1]?.body))).not.toHaveProperty(
+      "due_date",
+    );
+  });
+
+  it("posts due_date when the add form includes a date", async () => {
+    const user = userEvent.setup();
+    const created: Task = {
+      id: 9,
+      title: "Dated item",
+      description: "",
+      status: "todo",
+      priority: "medium",
+      due_date: "2026-11-03",
+      created_at: "2026-10-28T17:00:00+00:00",
+    };
+
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? "GET";
+      if (url.endsWith("/api/tasks") && method === "GET") {
+        return Promise.resolve(
+          new Response(JSON.stringify([]), { status: 200 }),
+        );
+      }
+      if (url.endsWith("/api/tasks") && method === "POST") {
+        const body = JSON.parse(String(init?.body)) as Partial<Task>;
+        return Promise.resolve(
+          new Response(JSON.stringify({ ...created, ...body }), {
+            status: 201,
+          }),
+        );
+      }
+      return Promise.resolve(new Response("not found", { status: 404 }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<App />);
+    await screen.findByRole("heading", { name: "To Do" });
+
+    await user.type(screen.getByPlaceholderText("Task title"), "Dated item");
+    await user.type(screen.getByLabelText("Due date"), "2026-11-03");
+    await user.click(screen.getByRole("button", { name: "Add task" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Dated item")).toBeInTheDocument();
+    });
+
+    const postCall = fetchMock.mock.calls.find(
+      (call) =>
+        String(call[0]).endsWith("/api/tasks") && call[1]?.method === "POST",
+    );
+    expect(JSON.parse(String(postCall?.[1]?.body))).toMatchObject({
+      title: "Dated item",
+      priority: "medium",
+      due_date: "2026-11-03",
     });
   });
 
@@ -329,6 +391,7 @@ describe("AddTaskForm", () => {
       "New item",
       "Some details",
       "medium",
+      null,
     );
   });
 
@@ -345,6 +408,32 @@ describe("AddTaskForm", () => {
     await user.selectOptions(screen.getByLabelText("Priority"), "high");
     await user.click(screen.getByRole("button", { name: "Add task" }));
 
-    expect(onSubmit).toHaveBeenCalledWith("New item", "Some details", "high");
+    expect(onSubmit).toHaveBeenCalledWith(
+      "New item",
+      "Some details",
+      "high",
+      null,
+    );
+  });
+
+  it("calls onSubmit with the chosen due date and then clears the field", async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    render(<AddTaskForm onSubmit={onSubmit} />);
+
+    const dueDate = screen.getByLabelText("Due date");
+    expect(dueDate).toHaveAttribute("type", "date");
+
+    await user.type(screen.getByPlaceholderText("Task title"), "New item");
+    await user.type(dueDate, "2026-11-03");
+    await user.click(screen.getByRole("button", { name: "Add task" }));
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      "New item",
+      "",
+      "medium",
+      "2026-11-03",
+    );
+    expect(dueDate).toHaveValue("");
   });
 });

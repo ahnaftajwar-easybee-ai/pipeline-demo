@@ -12,6 +12,7 @@ interface AddTaskFormProps {
     title: string,
     description: string,
     priority: TaskPriority,
+    dueDate: string | null,
   ) => Promise<void>;
 }
 
@@ -19,6 +20,7 @@ export const AddTaskForm = ({ onSubmit }: AddTaskFormProps) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<TaskPriority>("medium");
+  const [dueDate, setDueDate] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -29,10 +31,11 @@ export const AddTaskForm = ({ onSubmit }: AddTaskFormProps) => {
     }
     setIsSubmitting(true);
     try {
-      await onSubmit(trimmed, description.trim(), priority);
+      await onSubmit(trimmed, description.trim(), priority, dueDate || null);
       setTitle("");
       setDescription("");
       setPriority("medium");
+      setDueDate("");
     } finally {
       setIsSubmitting(false);
     }
@@ -70,6 +73,12 @@ export const AddTaskForm = ({ onSubmit }: AddTaskFormProps) => {
             </option>
           ))}
         </select>
+        <input
+          type="date"
+          aria-label="Due date"
+          value={dueDate}
+          onChange={(event) => setDueDate(event.target.value)}
+        />
         <button type="submit" disabled={isSubmitting || !title.trim()}>
           {isSubmitting ? "Adding…" : "Add task"}
         </button>

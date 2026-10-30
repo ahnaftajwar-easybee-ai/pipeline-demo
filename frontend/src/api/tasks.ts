@@ -27,7 +27,7 @@ export async function createTask(payload: TaskCreatePayload): Promise<Task> {
 
 export async function updateTask(
   id: number,
-  patch: Partial<Pick<Task, "status" | "priority">>,
+  patch: Partial<Pick<Task, "status" | "priority" | "due_date">>,
 ): Promise<Task> {
   const response = await fetch(`/api/tasks/${id}`, {
     method: "PATCH",

@@ -7,6 +7,7 @@ export interface Task {
   description: string | null;
   status: TaskStatus;
   priority: TaskPriority;
+  due_date: string | null;
   created_at: string;
 }
 
@@ -15,4 +16,5 @@ export interface TaskCreatePayload {
   description?: string;
   status?: TaskStatus;
   priority?: TaskPriority;
+  due_date?: string | null;
 }

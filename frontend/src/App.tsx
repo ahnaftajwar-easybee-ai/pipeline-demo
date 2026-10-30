@@ -54,6 +54,7 @@ export const App = () => {
     title: string,
     description: string,
     priority: TaskPriority,
+    dueDate: string | null,
   ) => {
     setError(null);
     try {
@@ -61,6 +62,7 @@ export const App = () => {
         title,
         description: description || undefined,
         priority,
+        ...(dueDate ? { due_date: dueDate } : {}),
       });
       setTasks((prev) => [...prev, created]);
     } catch (err) {
