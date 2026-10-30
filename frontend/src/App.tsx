@@ -15,13 +15,29 @@ import "./App.css";
 export const App = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
+  const [sortByDue, setSortByDue] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const visibleTasks =
+  const priorityFiltered =
     priorityFilter === "all"
       ? tasks
       : tasks.filter((task) => task.priority === priorityFilter);
+
+  const visibleTasks = sortByDue
+    ? [...priorityFiltered].sort((left, right) => {
+        if (left.due_date === right.due_date) {
+          return 0;
+        }
+        if (left.due_date === null) {
+          return 1;
+        }
+        if (right.due_date === null) {
+          return -1;
+        }
+        return left.due_date < right.due_date ? -1 : 1;
+      })
+    : priorityFiltered;
 
   useEffect(() => {
     let cancelled = false;
@@ -131,7 +147,12 @@ export const App = () => {
           <p className="app-loading">Loading tasks…</p>
         ) : (
           <>
-            <FilterBar value={priorityFilter} onChange={setPriorityFilter} />
+            <FilterBar
+              value={priorityFilter}
+              onChange={setPriorityFilter}
+              sortByDue={sortByDue}
+              onSortByDueChange={setSortByDue}
+            />
             <KanbanBoard
               tasks={visibleTasks}
               onStatusChange={handleStatusChange}

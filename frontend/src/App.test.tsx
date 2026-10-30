@@ -90,6 +90,13 @@ function stubTaskList(tasks: Task[]) {
   );
 }
 
+function columnTitles(status: TaskStatus): string[] {
+  const region = screen.getByRole("region", { name: COLUMN_LABEL[status] });
+  return within(region)
+    .getAllByRole("heading", { level: 3 })
+    .map((heading) => heading.textContent ?? "");
+}
+
 function expectColumnShowsOnly(status: TaskStatus, priority: TaskPriority) {
   const region = screen.getByRole("region", { name: COLUMN_LABEL[status] });
   expect(within(region).getByText(`${status} ${priority}`)).toBeInTheDocument();
@@ -541,6 +548,71 @@ describe("App", () => {
     expect(JSON.parse(String(patches().at(-1)?.[1]?.body))).toEqual({
       due_date: null,
     });
+  });
+
+  it("sorts the priority-filtered set soonest first with undated tasks last", async () => {
+    const user = userEvent.setup();
+    const dueSortTasks: Task[] = [
+      {
+        id: 1,
+        title: "Later high",
+        description: null,
+        status: "todo",
+        priority: "high",
+        due_date: "2026-12-01",
+        created_at: "2026-10-28T14:00:00+00:00",
+      },
+      {
+        id: 2,
+        title: "Sooner high",
+        description: null,
+        status: "todo",
+        priority: "high",
+        due_date: "2026-11-01",
+        created_at: "2026-10-28T14:00:00+00:00",
+      },
+      {
+        id: 3,
+        title: "Undated medium",
+        description: null,
+        status: "todo",
+        priority: "medium",
+        due_date: null,
+        created_at: "2026-10-28T14:00:00+00:00",
+      },
+      {
+        id: 4,
+        title: "Mid low",
+        description: null,
+        status: "todo",
+        priority: "low",
+        due_date: "2026-11-15",
+        created_at: "2026-10-28T14:00:00+00:00",
+      },
+    ];
+    stubTaskList(dueSortTasks);
+    render(<App />);
+    await screen.findByText("Later high");
+
+    const sortButton = screen.getByRole("button", { name: "Sort by due date" });
+    expect(sortButton).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(screen.getByRole("button", { name: "High" }));
+    expect(columnTitles("todo")).toEqual(["Later high", "Sooner high"]);
+
+    await user.click(sortButton);
+    expect(sortButton).toHaveAttribute("aria-pressed", "true");
+    expect(columnTitles("todo")).toEqual(["Sooner high", "Later high"]);
+    expect(screen.queryByText("Undated medium")).not.toBeInTheDocument();
+    expect(screen.queryByText("Mid low")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "All" }));
+    expect(columnTitles("todo")).toEqual([
+      "Sooner high",
+      "Mid low",
+      "Later high",
+      "Undated medium",
+    ]);
   });
 });
 
