@@ -267,6 +267,10 @@ describe("App", () => {
     render(<App />);
     await screen.findByText("todo high");
 
+    expect(
+      screen.getByRole("group", { name: "Filter by priority" }),
+    ).toBeInTheDocument();
+
     const allButton = screen.getByRole("button", { name: "All" });
     expect(allButton).toHaveAttribute("aria-pressed", "true");
 

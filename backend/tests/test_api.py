@@ -133,8 +133,21 @@ def test_patch_priority_to_low_persists(client: TestClient) -> None:
     assert task["priority"] == "low"
 
 
+def test_patch_explicit_null_description_clears_description(
+    client: TestClient,
+) -> None:
+    before = next(task for task in client.get("/api/tasks").json() if task["id"] == 1)
+    assert before["description"] is not None
+    response = client.patch("/api/tasks/1", json={"description": None})
+    assert response.status_code == 200
+    assert response.json()["description"] is None
+    after = next(task for task in client.get("/api/tasks").json() if task["id"] == 1)
+    assert after["description"] is None
+
+
 def test_seeded_tasks_include_all_priorities(client: TestClient) -> None:
     tasks = client.get("/api/tasks").json()
+    assert len(tasks) == 8
     priorities = {task["priority"] for task in tasks}
     assert {"low", "medium", "high"} <= priorities
     assert all(task["priority"] in {"low", "medium", "high"} for task in tasks)
