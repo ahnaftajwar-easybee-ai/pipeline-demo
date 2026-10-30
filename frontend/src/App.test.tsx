@@ -156,6 +156,63 @@ describe("App", () => {
       expect(screen.getByTestId("priority-badge-1")).toHaveTextContent("Low");
     });
   });
+
+  it("shows a High badge after creating a task with high priority", async () => {
+    const user = userEvent.setup();
+    const created: Task = {
+      id: 9,
+      title: "New item",
+      description: "Some details",
+      status: "todo",
+      priority: "high",
+      created_at: "2026-10-28T17:00:00+00:00",
+    };
+
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? "GET";
+      if (url.endsWith("/api/tasks") && method === "GET") {
+        return Promise.resolve(
+          new Response(JSON.stringify([]), { status: 200 }),
+        );
+      }
+      if (url.endsWith("/api/tasks") && method === "POST") {
+        const body = JSON.parse(String(init?.body)) as Partial<Task>;
+        return Promise.resolve(
+          new Response(JSON.stringify({ ...created, ...body }), {
+            status: 201,
+          }),
+        );
+      }
+      return Promise.resolve(new Response("not found", { status: 404 }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<App />);
+    await screen.findByRole("heading", { name: "To Do" });
+
+    await user.type(screen.getByPlaceholderText("Task title"), "New item");
+    await user.type(
+      screen.getByPlaceholderText("Description (optional)"),
+      "Some details",
+    );
+    await user.selectOptions(screen.getByLabelText("Priority"), "high");
+    await user.click(screen.getByRole("button", { name: "Add task" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("priority-badge-9")).toHaveTextContent("High");
+    });
+
+    const postCall = fetchMock.mock.calls.find(
+      (call) =>
+        String(call[0]).endsWith("/api/tasks") && call[1]?.method === "POST",
+    );
+    expect(JSON.parse(String(postCall?.[1]?.body))).toMatchObject({
+      title: "New item",
+      description: "Some details",
+      priority: "high",
+    });
+  });
 });
 
 describe("AddTaskForm", () => {
@@ -171,6 +228,26 @@ describe("AddTaskForm", () => {
     );
     await user.click(screen.getByRole("button", { name: "Add task" }));
 
-    expect(onSubmit).toHaveBeenCalledWith("New item", "Some details");
+    expect(onSubmit).toHaveBeenCalledWith(
+      "New item",
+      "Some details",
+      "medium",
+    );
+  });
+
+  it("calls onSubmit with high when High is chosen", async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    render(<AddTaskForm onSubmit={onSubmit} />);
+
+    await user.type(screen.getByPlaceholderText("Task title"), "New item");
+    await user.type(
+      screen.getByPlaceholderText("Description (optional)"),
+      "Some details",
+    );
+    await user.selectOptions(screen.getByLabelText("Priority"), "high");
+    await user.click(screen.getByRole("button", { name: "Add task" }));
+
+    expect(onSubmit).toHaveBeenCalledWith("New item", "Some details", "high");
   });
 });

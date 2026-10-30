@@ -43,12 +43,17 @@ export const App = () => {
     };
   }, []);
 
-  const handleAdd = async (title: string, description: string) => {
+  const handleAdd = async (
+    title: string,
+    description: string,
+    priority: TaskPriority,
+  ) => {
     setError(null);
     try {
       const created = await createTask({
         title,
         description: description || undefined,
+        priority,
       });
       setTasks((prev) => [...prev, created]);
     } catch (err) {
