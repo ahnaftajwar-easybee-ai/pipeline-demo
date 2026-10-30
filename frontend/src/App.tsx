@@ -3,17 +3,25 @@ import {
   createTask,
   deleteTask,
   fetchTasks,
+  updateTask,
   updateTaskStatus,
 } from "./api/tasks";
 import { AddTaskForm } from "./components/AddTaskForm";
+import { FilterBar, type PriorityFilter } from "./components/FilterBar";
 import { KanbanBoard } from "./components/KanbanBoard";
-import type { Task, TaskStatus } from "./types";
+import type { Task, TaskPriority, TaskStatus } from "./types";
 import "./App.css";
 
 export const App = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const visibleTasks =
+    priorityFilter === "all"
+      ? tasks
+      : tasks.filter((task) => task.priority === priorityFilter);
 
   useEffect(() => {
     let cancelled = false;
@@ -42,16 +50,31 @@ export const App = () => {
     };
   }, []);
 
-  const handleAdd = async (title: string, description: string) => {
+  const handleAdd = async (
+    title: string,
+    description: string,
+    priority: TaskPriority,
+  ) => {
     setError(null);
     try {
       const created = await createTask({
         title,
         description: description || undefined,
+        priority,
       });
       setTasks((prev) => [...prev, created]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create task");
+    }
+  };
+
+  const handlePriorityChange = async (id: number, priority: TaskPriority) => {
+    setError(null);
+    try {
+      const updated = await updateTask(id, { priority });
+      setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update task");
     }
   };
 
@@ -95,11 +118,15 @@ export const App = () => {
         {isLoading ? (
           <p className="app-loading">Loading tasks…</p>
         ) : (
-          <KanbanBoard
-            tasks={tasks}
-            onStatusChange={handleStatusChange}
-            onDelete={handleDelete}
-          />
+          <>
+            <FilterBar value={priorityFilter} onChange={setPriorityFilter} />
+            <KanbanBoard
+              tasks={visibleTasks}
+              onStatusChange={handleStatusChange}
+              onPriorityChange={handlePriorityChange}
+              onDelete={handleDelete}
+            />
+          </>
         )}
       </main>
     </div>

@@ -25,16 +25,23 @@ export async function createTask(payload: TaskCreatePayload): Promise<Task> {
   return handleResponse<Task>(response);
 }
 
-export async function updateTaskStatus(
+export async function updateTask(
   id: number,
-  status: TaskStatus,
+  patch: Partial<Pick<Task, "status" | "priority">>,
 ): Promise<Task> {
   const response = await fetch(`/api/tasks/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ status }),
+    body: JSON.stringify(patch),
   });
   return handleResponse<Task>(response);
+}
+
+export async function updateTaskStatus(
+  id: number,
+  status: TaskStatus,
+): Promise<Task> {
+  return updateTask(id, { status });
 }
 
 export async function deleteTask(id: number): Promise<void> {

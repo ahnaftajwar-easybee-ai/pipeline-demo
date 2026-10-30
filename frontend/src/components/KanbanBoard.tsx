@@ -1,4 +1,4 @@
-import type { Task, TaskStatus } from "../types";
+import type { Task, TaskPriority, TaskStatus } from "../types";
 import { TaskCard } from "./TaskCard";
 
 const COLUMNS: { status: TaskStatus; title: string; className: string }[] = [
@@ -10,12 +10,14 @@ const COLUMNS: { status: TaskStatus; title: string; className: string }[] = [
 interface KanbanBoardProps {
   tasks: Task[];
   onStatusChange: (id: number, status: TaskStatus) => void;
+  onPriorityChange: (id: number, priority: TaskPriority) => void;
   onDelete: (id: number) => void;
 }
 
 export const KanbanBoard = ({
   tasks,
   onStatusChange,
+  onPriorityChange,
   onDelete,
 }: KanbanBoardProps) => {
   return (
@@ -38,6 +40,7 @@ export const KanbanBoard = ({
                   key={task.id}
                   task={task}
                   onStatusChange={onStatusChange}
+                  onPriorityChange={onPriorityChange}
                   onDelete={onDelete}
                 />
               ))}

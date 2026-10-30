@@ -1,12 +1,24 @@
 import { useState, type FormEvent } from "react";
+import type { TaskPriority } from "../types";
+
+const PRIORITY_OPTIONS: { value: TaskPriority; label: string }[] = [
+  { value: "low", label: "Low" },
+  { value: "medium", label: "Medium" },
+  { value: "high", label: "High" },
+];
 
 interface AddTaskFormProps {
-  onSubmit: (title: string, description: string) => Promise<void>;
+  onSubmit: (
+    title: string,
+    description: string,
+    priority: TaskPriority,
+  ) => Promise<void>;
 }
 
 export const AddTaskForm = ({ onSubmit }: AddTaskFormProps) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [priority, setPriority] = useState<TaskPriority>("medium");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -17,9 +29,10 @@ export const AddTaskForm = ({ onSubmit }: AddTaskFormProps) => {
     }
     setIsSubmitting(true);
     try {
-      await onSubmit(trimmed, description.trim());
+      await onSubmit(trimmed, description.trim(), priority);
       setTitle("");
       setDescription("");
+      setPriority("medium");
     } finally {
       setIsSubmitting(false);
     }
@@ -44,6 +57,19 @@ export const AddTaskForm = ({ onSubmit }: AddTaskFormProps) => {
           value={description}
           onChange={(event) => setDescription(event.target.value)}
         />
+        <select
+          aria-label="Priority"
+          value={priority}
+          onChange={(event) =>
+            setPriority(event.target.value as TaskPriority)
+          }
+        >
+          {PRIORITY_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
         <button type="submit" disabled={isSubmitting || !title.trim()}>
           {isSubmitting ? "Adding…" : "Add task"}
         </button>
