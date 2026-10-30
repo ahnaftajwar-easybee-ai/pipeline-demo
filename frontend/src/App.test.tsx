@@ -1,10 +1,10 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 import { AddTaskForm } from "./components/AddTaskForm";
 import { KanbanBoard } from "./components/KanbanBoard";
-import type { Task } from "./types";
+import type { Task, TaskPriority, TaskStatus } from "./types";
 
 const sampleTasks: Task[] = [
   {
@@ -32,6 +32,53 @@ const sampleTasks: Task[] = [
     created_at: "2026-10-28T16:00:00+00:00",
   },
 ];
+
+const COLUMN_LABEL: Record<TaskStatus, string> = {
+  todo: "To Do",
+  in_progress: "In Progress",
+  done: "Done",
+};
+
+const mixedPriorityTasks: Task[] = (
+  ["todo", "in_progress", "done"] as const
+).flatMap((status, columnIndex) =>
+  (["high", "medium", "low"] as const).map((priority, priorityIndex) => ({
+    id: columnIndex * 3 + priorityIndex + 1,
+    title: `${status} ${priority}`,
+    description: null,
+    status,
+    priority,
+    created_at: "2026-10-28T14:00:00+00:00",
+  })),
+);
+
+function stubTaskList(tasks: Task[]) {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const method = init?.method ?? "GET";
+      if (String(input).endsWith("/api/tasks") && method === "GET") {
+        return Promise.resolve(
+          new Response(JSON.stringify(tasks), { status: 200 }),
+        );
+      }
+      return Promise.resolve(new Response("not found", { status: 404 }));
+    }),
+  );
+}
+
+function expectColumnShowsOnly(status: TaskStatus, priority: TaskPriority) {
+  const region = screen.getByRole("region", { name: COLUMN_LABEL[status] });
+  expect(within(region).getByText(`${status} ${priority}`)).toBeInTheDocument();
+  for (const other of ["high", "medium", "low"] as const) {
+    if (other === priority) {
+      continue;
+    }
+    expect(
+      within(region).queryByText(`${status} ${other}`),
+    ).not.toBeInTheDocument();
+  }
+}
 
 describe("KanbanBoard", () => {
   it("renders three column headings", () => {
@@ -213,6 +260,52 @@ describe("App", () => {
       priority: "high",
     });
   });
+
+  it("filters every column to High and restores every card with All", async () => {
+    const user = userEvent.setup();
+    stubTaskList(mixedPriorityTasks);
+    render(<App />);
+    await screen.findByText("todo high");
+
+    const allButton = screen.getByRole("button", { name: "All" });
+    expect(allButton).toHaveAttribute("aria-pressed", "true");
+
+    const highButton = screen.getByRole("button", { name: "High" });
+    await user.click(highButton);
+    expect(highButton).toHaveAttribute("aria-pressed", "true");
+    expect(allButton).toHaveAttribute("aria-pressed", "false");
+
+    for (const status of ["todo", "in_progress", "done"] as const) {
+      expectColumnShowsOnly(status, "high");
+    }
+
+    await user.click(allButton);
+    expect(allButton).toHaveAttribute("aria-pressed", "true");
+    for (const task of mixedPriorityTasks) {
+      expect(screen.getByText(task.title)).toBeInTheDocument();
+    }
+  });
+
+  it.each([
+    ["Medium", "medium"],
+    ["Low", "low"],
+  ] as const)(
+    "filters every column to %s",
+    async (label, priority) => {
+      const user = userEvent.setup();
+      stubTaskList(mixedPriorityTasks);
+      render(<App />);
+      await screen.findByText("todo high");
+
+      const button = screen.getByRole("button", { name: label });
+      await user.click(button);
+      expect(button).toHaveAttribute("aria-pressed", "true");
+
+      for (const status of ["todo", "in_progress", "done"] as const) {
+        expectColumnShowsOnly(status, priority);
+      }
+    },
+  );
 });
 
 describe("AddTaskForm", () => {

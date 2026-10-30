@@ -7,14 +7,21 @@ import {
   updateTaskStatus,
 } from "./api/tasks";
 import { AddTaskForm } from "./components/AddTaskForm";
+import { FilterBar, type PriorityFilter } from "./components/FilterBar";
 import { KanbanBoard } from "./components/KanbanBoard";
 import type { Task, TaskPriority, TaskStatus } from "./types";
 import "./App.css";
 
 export const App = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const visibleTasks =
+    priorityFilter === "all"
+      ? tasks
+      : tasks.filter((task) => task.priority === priorityFilter);
 
   useEffect(() => {
     let cancelled = false;
@@ -111,12 +118,15 @@ export const App = () => {
         {isLoading ? (
           <p className="app-loading">Loading tasks…</p>
         ) : (
-          <KanbanBoard
-            tasks={tasks}
-            onStatusChange={handleStatusChange}
-            onPriorityChange={handlePriorityChange}
-            onDelete={handleDelete}
-          />
+          <>
+            <FilterBar value={priorityFilter} onChange={setPriorityFilter} />
+            <KanbanBoard
+              tasks={visibleTasks}
+              onStatusChange={handleStatusChange}
+              onPriorityChange={handlePriorityChange}
+              onDelete={handleDelete}
+            />
+          </>
         )}
       </main>
     </div>
