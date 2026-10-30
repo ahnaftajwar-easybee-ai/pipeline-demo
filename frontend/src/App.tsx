@@ -3,11 +3,12 @@ import {
   createTask,
   deleteTask,
   fetchTasks,
+  updateTask,
   updateTaskStatus,
 } from "./api/tasks";
 import { AddTaskForm } from "./components/AddTaskForm";
 import { KanbanBoard } from "./components/KanbanBoard";
-import type { Task, TaskStatus } from "./types";
+import type { Task, TaskPriority, TaskStatus } from "./types";
 import "./App.css";
 
 export const App = () => {
@@ -55,6 +56,16 @@ export const App = () => {
     }
   };
 
+  const handlePriorityChange = async (id: number, priority: TaskPriority) => {
+    setError(null);
+    try {
+      const updated = await updateTask(id, { priority });
+      setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update task");
+    }
+  };
+
   const handleStatusChange = async (id: number, status: TaskStatus) => {
     setError(null);
     try {
@@ -98,6 +109,7 @@ export const App = () => {
           <KanbanBoard
             tasks={tasks}
             onStatusChange={handleStatusChange}
+            onPriorityChange={handlePriorityChange}
             onDelete={handleDelete}
           />
         )}

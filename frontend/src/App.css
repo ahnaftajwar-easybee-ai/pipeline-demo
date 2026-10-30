@@ -299,6 +299,11 @@ body {
   font-size: 0.8rem;
 }
 
+.task-card__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
 .task-card__date {
   color: var(--muted);
 }

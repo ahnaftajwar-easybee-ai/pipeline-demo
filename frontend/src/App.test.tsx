@@ -1,6 +1,7 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { App } from "./App";
 import { AddTaskForm } from "./components/AddTaskForm";
 import { KanbanBoard } from "./components/KanbanBoard";
 import type { Task } from "./types";
@@ -35,7 +36,12 @@ const sampleTasks: Task[] = [
 describe("KanbanBoard", () => {
   it("renders three column headings", () => {
     render(
-      <KanbanBoard tasks={[]} onStatusChange={vi.fn()} onDelete={vi.fn()} />,
+      <KanbanBoard
+        tasks={[]}
+        onStatusChange={vi.fn()}
+        onPriorityChange={vi.fn()}
+        onDelete={vi.fn()}
+      />,
     );
     expect(screen.getByRole("heading", { name: "To Do" })).toBeInTheDocument();
     expect(
@@ -49,6 +55,7 @@ describe("KanbanBoard", () => {
       <KanbanBoard
         tasks={sampleTasks}
         onStatusChange={vi.fn()}
+        onPriorityChange={vi.fn()}
         onDelete={vi.fn()}
       />,
     );
@@ -62,6 +69,7 @@ describe("KanbanBoard", () => {
       <KanbanBoard
         tasks={sampleTasks}
         onStatusChange={vi.fn()}
+        onPriorityChange={vi.fn()}
         onDelete={vi.fn()}
       />,
     );
@@ -76,6 +84,77 @@ describe("KanbanBoard", () => {
     expect(medium).toHaveClass("priority-badge", "priority-badge--medium");
     expect(high).toHaveTextContent("High");
     expect(high).toHaveClass("priority-badge", "priority-badge--high");
+  });
+
+  it("calls onPriorityChange when Low is chosen", async () => {
+    const user = userEvent.setup();
+    const onPriorityChange = vi.fn();
+    render(
+      <KanbanBoard
+        tasks={[sampleTasks[2]]}
+        onStatusChange={vi.fn()}
+        onPriorityChange={onPriorityChange}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    await user.selectOptions(
+      screen.getByLabelText("Priority for Gamma task"),
+      "low",
+    );
+
+    expect(onPriorityChange).toHaveBeenCalledWith(3, "low");
+  });
+});
+
+describe("App", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("shows a Low badge after a priority patch resolves", async () => {
+    const user = userEvent.setup();
+    const task: Task = {
+      ...sampleTasks[0],
+      priority: "high",
+    };
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        const method = init?.method ?? "GET";
+        if (url.endsWith("/api/tasks") && method === "GET") {
+          return Promise.resolve(
+            new Response(JSON.stringify([task]), { status: 200 }),
+          );
+        }
+        if (url.endsWith("/api/tasks/1") && method === "PATCH") {
+          const body = JSON.parse(String(init?.body)) as {
+            priority: Task["priority"];
+          };
+          return Promise.resolve(
+            new Response(JSON.stringify({ ...task, ...body }), { status: 200 }),
+          );
+        }
+        return Promise.resolve(new Response("not found", { status: 404 }));
+      }),
+    );
+
+    render(<App />);
+
+    expect(await screen.findByTestId("priority-badge-1")).toHaveTextContent(
+      "High",
+    );
+
+    await user.selectOptions(
+      screen.getByLabelText("Priority for Alpha task"),
+      "low",
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("priority-badge-1")).toHaveTextContent("Low");
+    });
   });
 });
 

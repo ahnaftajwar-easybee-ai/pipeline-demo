@@ -12,15 +12,19 @@ const PRIORITY_LABEL: Record<TaskPriority, string> = {
   high: "High",
 };
 
+const PRIORITY_OPTIONS: TaskPriority[] = ["low", "medium", "high"];
+
 interface TaskCardProps {
   task: Task;
   onStatusChange: (id: number, status: TaskStatus) => void;
+  onPriorityChange: (id: number, priority: TaskPriority) => void;
   onDelete: (id: number) => void;
 }
 
 export const TaskCard = ({
   task,
   onStatusChange,
+  onPriorityChange,
   onDelete,
 }: TaskCardProps) => {
   const createdLabel = new Date(task.created_at).toLocaleDateString(undefined, {
@@ -61,22 +65,40 @@ export const TaskCard = ({
         <time className="task-card__date" dateTime={task.created_at}>
           {createdLabel}
         </time>
-        <label className="task-card__move">
-          <span className="sr-only">Move task</span>
-          <select
-            value={task.status}
-            aria-label={`Move ${task.title}`}
-            onChange={(event) =>
-              onStatusChange(task.id, event.target.value as TaskStatus)
-            }
-          >
-            {STATUS_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="task-card__actions">
+          <label className="task-card__move">
+            <span className="sr-only">Priority</span>
+            <select
+              value={task.priority}
+              aria-label={`Priority for ${task.title}`}
+              onChange={(event) =>
+                onPriorityChange(task.id, event.target.value as TaskPriority)
+              }
+            >
+              {PRIORITY_OPTIONS.map((priority) => (
+                <option key={priority} value={priority}>
+                  {PRIORITY_LABEL[priority]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="task-card__move">
+            <span className="sr-only">Move task</span>
+            <select
+              value={task.status}
+              aria-label={`Move ${task.title}`}
+              onChange={(event) =>
+                onStatusChange(task.id, event.target.value as TaskStatus)
+              }
+            >
+              {STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       </footer>
     </article>
   );
