@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+.dist-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# Node
+node_modules/
+dist/
+*.local
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+*.swp
+
+# Logs
+*.log
+npm-debug.log*
