@@ -12,41 +12,49 @@ SAMPLE_TASKS: list[dict[str, object]] = [
         "title": "Draft Q4 roadmap",
         "description": "Outline milestones and dependencies for the next quarter.",
         "status": "todo",
+        "priority": "high",
     },
     {
         "title": "Review design mockups",
         "description": "Leave feedback on the new dashboard wireframes in Figma.",
         "status": "todo",
+        "priority": "medium",
     },
     {
         "title": "Update API documentation",
         "description": None,
         "status": "todo",
+        "priority": "low",
     },
     {
         "title": "Implement auth middleware",
         "description": "JWT validation and role checks for protected routes.",
         "status": "in_progress",
+        "priority": "high",
     },
     {
         "title": "Fix pagination bug",
         "description": "List endpoint skips page 2 when sort order is descending.",
         "status": "in_progress",
+        "priority": "medium",
     },
     {
         "title": "Set up staging environment",
         "description": "Mirror production config with anonymized data.",
         "status": "in_progress",
+        "priority": "low",
     },
     {
         "title": "Ship v1.2 release",
         "description": "Tagged and deployed to production last Tuesday.",
         "status": "done",
+        "priority": "high",
     },
     {
         "title": "Onboard new teammate",
         "description": "Access, repo tour, and pairing session completed.",
         "status": "done",
+        "priority": "medium",
     },
 ]
 
@@ -68,6 +76,7 @@ class InMemoryTaskRepository:
                 title=str(raw["title"]),
                 description=raw["description"],  # type: ignore[arg-type]
                 status=raw["status"],  # type: ignore[arg-type]
+                priority=raw["priority"],  # type: ignore[arg-type]
                 created_at=created.isoformat(),
             )
 
@@ -85,6 +94,7 @@ class InMemoryTaskRepository:
             title=payload.title,
             description=payload.description,
             status=payload.status,
+            priority=payload.priority,
             created_at=_iso_now(),
         )
         self._tasks[task_id] = task
