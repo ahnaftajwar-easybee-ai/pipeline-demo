@@ -7,7 +7,12 @@ import app.main as main_module
 from app.main import app
 from app.repository import InMemoryTaskRepository
 
-_NON_CANONICAL_DUE_DATES = ("2026-11-3", "11/03/2026", "not-a-date")
+_NON_CANONICAL_DUE_DATES = (
+    "2026-11-3",
+    "11/03/2026",
+    "not-a-date",
+    "2026-02-30",
+)
 
 
 @pytest.fixture
