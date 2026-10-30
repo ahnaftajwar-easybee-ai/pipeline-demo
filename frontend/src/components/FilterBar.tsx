@@ -5,6 +5,8 @@ export type PriorityFilter = TaskPriority | "all";
 interface FilterBarProps {
   value: PriorityFilter;
   onChange: (value: PriorityFilter) => void;
+  sortByDue: boolean;
+  onSortByDueChange: (sortByDue: boolean) => void;
 }
 
 const FILTERS: { value: PriorityFilter; label: string }[] = [
@@ -14,7 +16,12 @@ const FILTERS: { value: PriorityFilter; label: string }[] = [
   { value: "low", label: "Low" },
 ];
 
-export const FilterBar = ({ value, onChange }: FilterBarProps) => {
+export const FilterBar = ({
+  value,
+  onChange,
+  sortByDue,
+  onSortByDueChange,
+}: FilterBarProps) => {
   return (
     <div className="filter-bar" role="group" aria-label="Filter by priority">
       {FILTERS.map((filter) => (
@@ -27,6 +34,13 @@ export const FilterBar = ({ value, onChange }: FilterBarProps) => {
           {filter.label}
         </button>
       ))}
+      <button
+        type="button"
+        aria-pressed={sortByDue}
+        onClick={() => onSortByDueChange(!sortByDue)}
+      >
+        Sort by due date
+      </button>
     </div>
   );
 };

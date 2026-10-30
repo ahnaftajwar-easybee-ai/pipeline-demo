@@ -1,9 +1,18 @@
+from datetime import date
+
 import pytest
 from fastapi.testclient import TestClient
 
 import app.main as main_module
 from app.main import app
 from app.repository import InMemoryTaskRepository
+
+_NON_CANONICAL_DUE_DATES = (
+    "2026-11-3",
+    "11/03/2026",
+    "not-a-date",
+    "2026-02-30",
+)
 
 
 @pytest.fixture
@@ -150,4 +159,117 @@ def test_seeded_tasks_include_all_priorities(client: TestClient) -> None:
     assert len(tasks) == 8
     priorities = {task["priority"] for task in tasks}
     assert {"low", "medium", "high"} <= priorities
+    assert all(task["priority"] in {"low", "medium", "high"} for task in tasks)
+
+
+def test_create_task_without_due_date_returns_null(client: TestClient) -> None:
+    response = client.post("/api/tasks", json={"title": "No date"})
+    assert response.status_code == 201
+    assert response.json()["due_date"] is None
+
+
+def test_create_and_patch_store_canonical_due_date(client: TestClient) -> None:
+    created = client.post(
+        "/api/tasks",
+        json={"title": "Dated task", "due_date": "2026-11-03"},
+    )
+    assert created.status_code == 201
+    body = created.json()
+    assert body["due_date"] == "2026-11-03"
+
+    patched = client.patch(
+        f"/api/tasks/{body['id']}",
+        json={"due_date": "2026-12-01"},
+    )
+    assert patched.status_code == 200
+    assert patched.json()["due_date"] == "2026-12-01"
+
+    listed = client.get("/api/tasks").json()
+    stored = next(task for task in listed if task["id"] == body["id"])
+    assert stored["due_date"] == "2026-12-01"
+
+
+def test_patch_null_due_date_clears_it(client: TestClient) -> None:
+    created = client.post(
+        "/api/tasks",
+        json={"title": "Clear me", "due_date": "2026-11-03"},
+    ).json()
+    response = client.patch(f"/api/tasks/{created['id']}", json={"due_date": None})
+    assert response.status_code == 200
+    assert response.json()["due_date"] is None
+    listed = client.get("/api/tasks").json()
+    stored = next(task for task in listed if task["id"] == created["id"])
+    assert stored["due_date"] is None
+
+
+def test_patch_omitted_due_date_leaves_it_unchanged(client: TestClient) -> None:
+    created = client.post(
+        "/api/tasks",
+        json={"title": "Keep date", "due_date": "2026-11-03"},
+    ).json()
+    response = client.patch(
+        f"/api/tasks/{created['id']}",
+        json={"title": "Renamed"},
+    )
+    assert response.status_code == 200
+    assert response.json()["due_date"] == "2026-11-03"
+    assert response.json()["title"] == "Renamed"
+
+
+@pytest.mark.parametrize("bad_due_date", _NON_CANONICAL_DUE_DATES)
+def test_create_rejects_non_canonical_due_date(
+    client: TestClient, bad_due_date: str
+) -> None:
+    before = client.get("/api/tasks").json()
+    response = client.post(
+        "/api/tasks",
+        json={"title": "Bad date", "due_date": bad_due_date},
+    )
+    assert response.status_code == 422
+    after = client.get("/api/tasks").json()
+    assert after == before
+
+
+@pytest.mark.parametrize("bad_due_date", _NON_CANONICAL_DUE_DATES)
+def test_patch_rejects_non_canonical_due_date_without_mutate(
+    client: TestClient, bad_due_date: str
+) -> None:
+    created = client.post(
+        "/api/tasks",
+        json={"title": "Stay dated", "due_date": "2026-11-03"},
+    ).json()
+    before = next(
+        task for task in client.get("/api/tasks").json() if task["id"] == created["id"]
+    )
+    response = client.patch(
+        f"/api/tasks/{created['id']}",
+        json={"due_date": bad_due_date},
+    )
+    assert response.status_code == 422
+    after = next(
+        task for task in client.get("/api/tasks").json() if task["id"] == created["id"]
+    )
+    assert after == before
+
+
+def test_seed_has_overdue_due_soon_and_undated_tasks(client: TestClient) -> None:
+    today = date.today().isoformat()
+    tasks = client.get("/api/tasks").json()
+    assert len(tasks) == 8
+    overdue = [
+        task
+        for task in tasks
+        if task["due_date"] is not None
+        and task["due_date"] < today
+        and task["status"] != "done"
+    ]
+    due_soon = [
+        task
+        for task in tasks
+        if task["due_date"] is not None and task["due_date"] > today
+    ]
+    undated = [task for task in tasks if task["due_date"] is None]
+    assert overdue
+    assert due_soon
+    assert undated
     assert all(task["priority"] in {"low", "medium", "high"} for task in tasks)
