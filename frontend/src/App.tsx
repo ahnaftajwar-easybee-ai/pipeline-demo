@@ -70,6 +70,16 @@ export const App = () => {
     }
   };
 
+  const handleDueDateChange = async (id: number, dueDate: string | null) => {
+    setError(null);
+    try {
+      const updated = await updateTask(id, { due_date: dueDate });
+      setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update task");
+    }
+  };
+
   const handlePriorityChange = async (id: number, priority: TaskPriority) => {
     setError(null);
     try {
@@ -126,6 +136,7 @@ export const App = () => {
               tasks={visibleTasks}
               onStatusChange={handleStatusChange}
               onPriorityChange={handlePriorityChange}
+              onDueDateChange={handleDueDateChange}
               onDelete={handleDelete}
             />
           </>

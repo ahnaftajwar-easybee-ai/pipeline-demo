@@ -11,6 +11,7 @@ interface KanbanBoardProps {
   tasks: Task[];
   onStatusChange: (id: number, status: TaskStatus) => void;
   onPriorityChange: (id: number, priority: TaskPriority) => void;
+  onDueDateChange: (id: number, dueDate: string | null) => void;
   onDelete: (id: number) => void;
 }
 
@@ -18,6 +19,7 @@ export const KanbanBoard = ({
   tasks,
   onStatusChange,
   onPriorityChange,
+  onDueDateChange,
   onDelete,
 }: KanbanBoardProps) => {
   return (
@@ -41,6 +43,7 @@ export const KanbanBoard = ({
                   task={task}
                   onStatusChange={onStatusChange}
                   onPriorityChange={onPriorityChange}
+                  onDueDateChange={onDueDateChange}
                   onDelete={onDelete}
                 />
               ))}
