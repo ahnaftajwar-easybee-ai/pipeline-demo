@@ -1,10 +1,16 @@
-import type { Task, TaskStatus } from "../types";
+import type { Task, TaskPriority, TaskStatus } from "../types";
 
 const STATUS_OPTIONS: { value: TaskStatus; label: string }[] = [
   { value: "todo", label: "To Do" },
   { value: "in_progress", label: "In Progress" },
   { value: "done", label: "Done" },
 ];
+
+const PRIORITY_LABEL: Record<TaskPriority, string> = {
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+};
 
 interface TaskCardProps {
   task: Task;
@@ -26,7 +32,15 @@ export const TaskCard = ({
   return (
     <article className="task-card" data-testid={`task-card-${task.id}`}>
       <header className="task-card__header">
-        <h3 className="task-card__title">{task.title}</h3>
+        <div className="task-card__heading">
+          <h3 className="task-card__title">{task.title}</h3>
+          <span
+            className={`priority-badge priority-badge--${task.priority}`}
+            data-testid={`priority-badge-${task.id}`}
+          >
+            {PRIORITY_LABEL[task.priority]}
+          </span>
+        </div>
         <button
           type="button"
           className="task-card__delete"

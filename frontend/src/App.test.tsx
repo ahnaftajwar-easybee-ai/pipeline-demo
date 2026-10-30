@@ -11,6 +11,7 @@ const sampleTasks: Task[] = [
     title: "Alpha task",
     description: "First",
     status: "todo",
+    priority: "low",
     created_at: "2026-10-28T14:00:00+00:00",
   },
   {
@@ -18,6 +19,7 @@ const sampleTasks: Task[] = [
     title: "Beta task",
     description: null,
     status: "in_progress",
+    priority: "medium",
     created_at: "2026-10-28T15:00:00+00:00",
   },
   {
@@ -25,6 +27,7 @@ const sampleTasks: Task[] = [
     title: "Gamma task",
     description: "Done work",
     status: "done",
+    priority: "high",
     created_at: "2026-10-28T16:00:00+00:00",
   },
 ];
@@ -52,6 +55,27 @@ describe("KanbanBoard", () => {
     expect(screen.getByText("Alpha task")).toBeInTheDocument();
     expect(screen.getByText("Beta task")).toBeInTheDocument();
     expect(screen.getByText("Gamma task")).toBeInTheDocument();
+  });
+
+  it("renders a colored priority badge on every card", () => {
+    render(
+      <KanbanBoard
+        tasks={sampleTasks}
+        onStatusChange={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    const low = screen.getByTestId("priority-badge-1");
+    const medium = screen.getByTestId("priority-badge-2");
+    const high = screen.getByTestId("priority-badge-3");
+
+    expect(low).toHaveTextContent("Low");
+    expect(low).toHaveClass("priority-badge", "priority-badge--low");
+    expect(medium).toHaveTextContent("Medium");
+    expect(medium).toHaveClass("priority-badge", "priority-badge--medium");
+    expect(high).toHaveTextContent("High");
+    expect(high).toHaveClass("priority-badge", "priority-badge--high");
   });
 });
 

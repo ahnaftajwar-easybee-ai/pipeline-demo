@@ -224,10 +224,42 @@ body {
   gap: 0.5rem;
 }
 
+.task-card__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .task-card__title {
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
+}
+
+.priority-badge {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+}
+
+.priority-badge--low {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.priority-badge--medium {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.priority-badge--high {
+  background: #fee2e2;
+  color: #b91c1c;
 }
 
 .task-card__delete {
